@@ -8,6 +8,7 @@ import os
 import re
 import typing as t
 from copy import deepcopy
+from datetime import datetime
 from functools import cached_property, partial
 from time import sleep
 
@@ -277,6 +278,7 @@ class LiteLLMModel(BenchmarkModule):
         )
 
         self.generation_kwargs = generation_kwargs
+        self._run_timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
             dataset_config=self.dataset_config,
             model_config=self.model_config,
@@ -1635,6 +1637,12 @@ class LiteLLMModel(BenchmarkModule):
             api_base=self.benchmark_config.api_base,
             api_version=self.benchmark_config.api_version,
             max_retries=3,
+            extra_body=dict(
+                session_id=(
+                    f"dutchrank-{dataset_config.name}-{self.model_config.model_id}"
+                    f"-{self._run_timestamp}"
+                )
+            ),
         )
 
         # Set up the `response_format` generation argument if we are dealing with a task
