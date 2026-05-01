@@ -432,11 +432,11 @@ def get_first_label_token_mapping(
     elif tokeniser is None:
         if log_metadata:
             log_once(
-                f"We will use logprobs with the model {model_config.model_id!r} "
-                "since the dataset supports it and no tokeniser is available.",
+                f"We will use string matching with the model {model_config.model_id!r} "
+                "since no tokeniser is available.",
                 level=logging.DEBUG,
             )
-        return True
+        return False
 
     local_labels = [
         dataset_config.prompt_label_mapping[label].strip()
