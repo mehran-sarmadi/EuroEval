@@ -226,5 +226,6 @@ DUTCH_CENTRAL_EXAM_MCQ_CONFIG = DatasetConfig(
     task=MCRC,
     languages=[DUTCH],
     labels=["1", "2", "3", "4", "5", "6"],
+    val_split="dev",
     unofficial=True,
 )
