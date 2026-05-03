@@ -1,7 +1,10 @@
 """All Dutch dataset configurations used in EuroEval."""
 
+from ..constants import CHOICES_MAPPING
 from ..data_models import DatasetConfig
+from ..enums import TaskGroup
 from ..languages import DUTCH
+from ..preprocessing import build_preprocessing_func
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
@@ -17,6 +20,35 @@ from ..tasks import (
     SIMPL,
     SUMM,
 )
+
+
+def _preprocess_dutch_central_exam_mcq(dataset):
+    """Apply standard MCQ preprocessing then normalize 1-indexed numeric labels to letters.
+
+    The HF train split uses numeric string answers ("1", "2", ...) while the dev/test
+    splits use letter answers ("a", "b", ...). This function normalises both to letters.
+    """
+    standard_preprocess = build_preprocessing_func(
+        dataset_name="dutch-central-exam-mcq",
+        task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+        input_column="question",
+        target_column="answer",
+        choices_column="options",
+        choices_label=CHOICES_MAPPING["nl"],
+    )
+    dataset = standard_preprocess(dataset)
+
+    def normalize_label(example):
+        label = example["label"]
+        if isinstance(label, str) and label.isdigit():
+            example["label"] = "abcdefghijklmnopqrstuvwxyz"[int(label) - 1]
+        return example
+
+    for split_name in list(dataset.keys()):
+        dataset[split_name] = dataset[split_name].map(
+            normalize_label, load_from_cache_file=False, keep_in_memory=True
+        )
+    return dataset
 
 
 # Official datasets ###
@@ -228,9 +260,7 @@ DUTCH_CENTRAL_EXAM_MCQ_CONFIG = DatasetConfig(
     languages=[DUTCH],
     labels=["a", "b", "c", "d", "e", "f"],
     val_split="dev",
-    input_column="question",
-    target_column="answer",
-    choices_column="options",
+    preprocessing_func=_preprocess_dutch_central_exam_mcq,
     max_generated_tokens=20,
     unofficial=True,
 )
