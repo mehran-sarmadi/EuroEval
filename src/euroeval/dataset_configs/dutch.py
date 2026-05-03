@@ -218,3 +218,13 @@ SICK_NL_CONFIG = DatasetConfig(
     languages=[DUTCH],
     unofficial=True,
 )
+
+DUTCH_CENTRAL_EXAM_MCQ_CONFIG = DatasetConfig(
+    name="dutch-central-exam-mcq",
+    pretty_name="Dutch Central Exam MCQ",
+    source="dutch-central-exam-mcq.jsonl",
+    task=MCRC,
+    languages=[DUTCH],
+    labels=["1", "2", "3", "4", "5", "6"],
+    unofficial=True,
+)
