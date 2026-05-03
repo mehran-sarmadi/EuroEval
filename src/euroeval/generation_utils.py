@@ -329,7 +329,10 @@ def apply_prompt(
             few_shot_sections = [
                 create_prompt(
                     text=example["text"].replace("\n", " ").strip(),
-                    label=str(example["label"]).replace("\n", " ").strip(),
+                    label=dataset_config.prompt_label_mapping.get(
+                        str(example["label"]).replace("\n", " ").strip(),
+                        str(example["label"]).replace("\n", " ").strip(),
+                    ),
                     labels_str=dataset_config.get_labels_str(
                         labels=extract_multiple_choice_labels(
                             prompt=example["text"],
