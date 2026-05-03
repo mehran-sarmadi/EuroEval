@@ -1,7 +1,5 @@
 """All Dutch dataset configurations used in EuroEval."""
 
-from copy import deepcopy
-
 from ..data_models import DatasetConfig
 from ..languages import DUTCH
 from ..tasks import (
@@ -19,10 +17,6 @@ from ..tasks import (
     SIMPL,
     SUMM,
 )
-
-# Create a variant of MCRC that doesn't use logprobs (to avoid truncated JSON)
-MCRC_NO_LOGPROBS = deepcopy(MCRC)
-MCRC_NO_LOGPROBS.uses_logprobs = False
 
 
 # Official datasets ###
@@ -230,20 +224,13 @@ DUTCH_CENTRAL_EXAM_MCQ_CONFIG = DatasetConfig(
     name="dutch-central-exam-mcq",
     pretty_name="Dutch Central Exam MCQ",
     source="jjzha/dutch-central-exam-mcq",
-    task=MCRC_NO_LOGPROBS,
+    task=MCRC,
     languages=[DUTCH],
-    labels=["1", "2", "3", "4", "5", "6"],
-    prompt_label_mapping={
-        "1": "a",
-        "2": "b",
-        "3": "c",
-        "4": "d",
-        "5": "e",
-        "6": "f",
-    },
+    labels=["a", "b", "c", "d", "e", "f"],
     val_split="dev",
     input_column="question",
     target_column="answer",
     choices_column="options",
+    max_generated_tokens=20,
     unofficial=True,
 )
