@@ -322,6 +322,10 @@ def apply_prompt(
             ]
 
         case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
+            localised_labels = [
+                dataset_config.prompt_label_mapping.get(label, label)
+                for label in dataset_config.labels
+            ]
             few_shot_sections = [
                 create_prompt(
                     text=example["text"].replace("\n", " ").strip(),
@@ -329,7 +333,7 @@ def apply_prompt(
                     labels_str=dataset_config.get_labels_str(
                         labels=extract_multiple_choice_labels(
                             prompt=example["text"],
-                            candidate_labels=dataset_config.labels,
+                            candidate_labels=localised_labels,
                         )
                     ),
                 )
@@ -341,7 +345,7 @@ def apply_prompt(
                     label="",
                     labels_str=dataset_config.get_labels_str(
                         labels=extract_multiple_choice_labels(
-                            prompt=text, candidate_labels=dataset_config.labels
+                            prompt=text, candidate_labels=localised_labels
                         )
                     ),
                 )
