@@ -227,5 +227,8 @@ DUTCH_CENTRAL_EXAM_MCQ_CONFIG = DatasetConfig(
     languages=[DUTCH],
     labels=["1", "2", "3", "4", "5", "6"],
     val_split="dev",
+    input_column="question",
+    target_column="answer",
+    choices_column="options",
     unofficial=True,
 )
