@@ -148,6 +148,7 @@ DUTCH_COLA_CONFIG = DatasetConfig(
     source="EuroEval/dutch-cola",
     task=LA,
     languages=[DUTCH],
+    num_few_shot_examples=5,
     unofficial=True,
 )
 
@@ -249,6 +250,7 @@ SICK_NL_CONFIG = DatasetConfig(
     source="EuroEval/sick-nl",
     task=NLI,
     languages=[DUTCH],
+    num_few_shot_examples=5,
     unofficial=True,
 )
 
