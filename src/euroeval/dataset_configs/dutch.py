@@ -149,6 +149,7 @@ DUTCH_COLA_CONFIG = DatasetConfig(
     task=LA,
     languages=[DUTCH],
     num_few_shot_examples=5,
+    max_generated_tokens=20,
     unofficial=True,
 )
 
@@ -251,6 +252,7 @@ SICK_NL_CONFIG = DatasetConfig(
     task=NLI,
     languages=[DUTCH],
     num_few_shot_examples=5,
+    max_generated_tokens=20,
     unofficial=True,
 )
 
