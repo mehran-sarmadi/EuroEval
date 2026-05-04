@@ -5,10 +5,12 @@ DATASETS=("dutch-cola" "sick-nl" "dutch-central-exam-mcq")
 ITERATIONS=1
 
 MODELS=(
-  "openrouter/openai/gpt-4.1-nano"
-  "openrouter/google/gemini-2.5-flash-lite"
-  "openrouter/qwen/qwen3.5-flash-02-23"
-  "openrouter/google/gemini-2.5-flash-lite-preview-09-2025"
+  "openrouter/openai/gpt-oss-120b"
+  "openrouter/qwen/qwen3-235b-a22b-2507"
+  "openrouter/google/gemma-4-26b-a4b-it"
+  "openrouter/xiaomi/mimo-v2-flash"
+  "openrouter/openai/gpt-5-nano"
+  "openrouter/google/gemma-4-31b-it"
 )
 
 # Build --dataset flags
