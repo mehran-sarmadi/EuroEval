@@ -5,12 +5,10 @@ DATASETS="dutch-cola sick-nl dutch-central-exam-mcq"
 ITERATIONS=1
 
 MODELS=(
-  "openrouter/openai/gpt-5"
-  "openrouter/google/gemini-2.0-flash-lite-001"
-  "openrouter/meta-llama/llama-4-scout"
-  "openrouter/meta-llama/llama-3.1-8b-instruct"
-  # Add more models below:
-  # "openrouter/provider/model-name"
+  "openrouter/openai/gpt-4.1-nano"
+  "openrouter/google/gemini-2.5-flash-lite"
+  "openrouter/qwen/qwen3.5-flash-02-23"
+  "openrouter/google/gemini-2.5-flash-lite-preview-09-2025"
 )
 
 for model in "${MODELS[@]}"; do
