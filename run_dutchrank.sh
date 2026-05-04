@@ -28,6 +28,7 @@ for model in "${MODELS[@]}"; do
     "${DATASET_ARGS[@]}" \
     --num-iterations "$ITERATIONS" \
     --evaluate-test-split \
+    --debug \
     --verbose
   echo ""
   echo "Finished: $model"
