@@ -1792,6 +1792,21 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
 
+        # OpenRouter-specific: disable fallbacks and optionally pin a provider
+        if self.model_config.model_id.startswith("openrouter/"):
+            provider_settings: dict[str, t.Any] = {"allow_fallbacks": False}
+            openrouter_provider = os.environ.get("OPENROUTER_PROVIDER")
+            if openrouter_provider:
+                provider_settings["order"] = [openrouter_provider]
+            generation_kwargs.setdefault("extra_body", {})["provider"] = (
+                provider_settings
+            )
+            log_once(
+                f"OpenRouter provider settings for {self.model_config.model_id!r}: "
+                f"{provider_settings}",
+                level=logging.DEBUG,
+            )
+
         # First attempt is a test run with a single conversation to handle errors
         # quickly. We repeat this multiple times to deal with different types of
         # errors, and stop if we get a successful response.
