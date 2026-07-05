@@ -1,5 +1,7 @@
 """All Dutch dataset configurations used in EuroEval."""
 
+from pathlib import Path
+
 from ..data_models import DatasetConfig
 from ..languages import DUTCH
 from ..tasks import (
@@ -258,5 +260,27 @@ RAGTRUTH_NL_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[DUTCH],
     train_split=None,
+    unofficial=True,
+)
+
+DUTCH_COR_CONFIG = DatasetConfig(
+    name="dutch-cor",
+    pretty_name="DutchCoR",
+    source={
+        "train": str(
+            Path.home()
+            / "Mehran/work/datachef/dutch-rank/automated_eval/DutchCoR/processed/train.csv"
+        ),
+        "val": str(
+            Path.home()
+            / "Mehran/work/datachef/dutch-rank/automated_eval/DutchCoR/processed/val.csv"
+        ),
+        "test": str(
+            Path.home()
+            / "Mehran/work/datachef/dutch-rank/automated_eval/DutchCoR/processed/test.csv"
+        ),
+    },
+    task=COMMON_SENSE,
+    languages=[DUTCH],
     unofficial=True,
 )

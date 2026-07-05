@@ -1282,6 +1282,81 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset winogrande-nl
 ```
 
+### Unofficial: DutchCoR
+
+DutchCoR (Dutch Commonsense Reasoning) is a natively Dutch commonsense reasoning
+dataset. Each sample consists of a Dutch text prefix ending with a conjunction, followed
+by four possible continuations. The task is to select the most plausible continuation.
+
+The original dataset consists of 3,952 approved samples. We use a 1,024 / 256 / 2,048
+split for training, validation and testing, respectively (so 3,328 samples used in
+total).
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Om de toekomst van onze kinderen te vrijwaren. Zo klinkt hét standaardantwoord van deze regeringen wanneer\na) de volgende regering misschien andere prioriteiten legt. \"Dat is niet evident.\nb) de toekomst er voor hun kinderen slechter uitziet.\nc) ze de eenzijdige besparingen moeten rechtvaardigen.\nd) ze een kroost te verdedigen hebben.",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "De NS rijdt vandaag met een aangepaste dienstregeling. Nee, er liggen geen blaadjes op het spoor, noch\na) is dit niet de oorzaak van het uit de vaart halen van de spitsdienst.\nb) trein en spoor liepen wel schade op.\nc) daar komt vanaf 15 januari een eind aan, maakt NS vandaag bekend.\nd) zijn er wissels bevroren, de NS vreest voor uitzetting van de rails door de hitte.",
+  "label": "d"
+}
+```
+
+```json
+{
+  "text": "In de Tweede Kamer maakt niemand bezwaar tegen Weekers' aankondiging dat 'de goeden zullen lijden onder de kwaden'. Integendeel\na) er zijn vooral twijfels of de staatssecretaris er wel hard genoeg in gaat.\nb) komen de beklagenswaardigen ter sprake die helemáál geen stroming volgen, en met mes en vork hun eigen graf graven.\nc) hebben ze gezegd dat de reclame niet in strijd is met de goede zeden.\nd) kon Van der Plas zich volledig in de boodschap van de CDA'er vinden: 'Deze mensen plegen strafbare feiten en spreken nu schande.",
+  "label": "a"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+
+- Prefix prompt:
+
+  ```text
+  Hieronder staan meerkeuzevragen (met antwoorden).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Vraag: {text}
+  Antwoordopties:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Antwoord: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Vraag: {text}
+  Antwoordopties:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Beantwoord de bovenstaande vraag met 'a', 'b', 'c' of 'd', en niets anders.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset dutch-cor
+```
+
 ## Summarisation
 
 ### WikiLingua-nl
