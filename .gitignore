@@ -161,4 +161,4 @@ PLAN.md
 
 # Generated data files
 data/
-./run_dutch_bench.sh
+run_dutch_bench.sh

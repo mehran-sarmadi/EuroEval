@@ -267,18 +267,9 @@ DUTCH_COR_CONFIG = DatasetConfig(
     name="dutch-cor",
     pretty_name="DutchCoR",
     source={
-        "train": str(
-            Path.home()
-            / "Mehran/work/datachef/dutch-rank/automated_eval/DutchCoR/processed/train.csv"
-        ),
-        "val": str(
-            Path.home()
-            / "Mehran/work/datachef/dutch-rank/automated_eval/DutchCoR/processed/val.csv"
-        ),
-        "test": str(
-            Path.home()
-            / "Mehran/work/datachef/dutch-rank/automated_eval/DutchCoR/processed/test.csv"
-        ),
+        "train": str(Path(__file__).resolve().parents[3] / "data" / "dutch-cor" / "train.csv"),
+        "val": str(Path(__file__).resolve().parents[3] / "data" / "dutch-cor" / "val.csv"),
+        "test": str(Path(__file__).resolve().parents[3] / "data" / "dutch-cor" / "test.csv"),
     },
     task=COMMON_SENSE,
     languages=[DUTCH],
