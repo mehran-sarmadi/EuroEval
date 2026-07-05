@@ -897,6 +897,10 @@ class BenchmarkResult(pydantic.BaseModel):
     vllm_version: str | None = get_package_version("vllm")
     xgrammar_version: str | None = get_package_version("xgrammar")
     litellm_version: str | None = None
+    evaluated_at: str | None = None
+    api_provider: str | None = None
+    model_version: str | None = None
+    model_quantization: str | None = None
     # EuroEval-specific metadata fields (preserved through EEE conversion)
     commercially_licensed: bool | None = None
     open: bool | None = None

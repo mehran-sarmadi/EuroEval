@@ -1136,6 +1136,24 @@ class Benchmarker:
                         if model_config.inference_backend == InferenceBackend.LITELLM
                         else None
                     ),
+                    evaluated_at=dt.datetime.now(dt.timezone.utc).isoformat(),
+                    api_provider=(
+                        getattr(model, "response_metadata", {}).get("api_provider")
+                        if model_config.inference_backend == InferenceBackend.LITELLM
+                        else None
+                    ),
+                    model_version=(
+                        getattr(model, "response_metadata", {}).get("model_version")
+                        if model_config.inference_backend == InferenceBackend.LITELLM
+                        else None
+                    ),
+                    model_quantization=(
+                        getattr(model, "response_metadata", {}).get(
+                            "model_quantization"
+                        )
+                        if model_config.inference_backend == InferenceBackend.LITELLM
+                        else None
+                    ),
                 )
                 log(f"Results:\n{results}", level=logging.DEBUG)
                 return record

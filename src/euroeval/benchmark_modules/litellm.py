@@ -281,6 +281,11 @@ class LiteLLMModel(BenchmarkModule):
         )
 
         self.generation_kwargs = generation_kwargs
+        self.response_metadata: dict[str, str | None] = {
+            "api_provider": None,
+            "model_version": None,
+            "model_quantization": None,
+        }
         self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
             dataset_config=self.dataset_config,
             model_config=self.model_config,
@@ -459,6 +464,11 @@ class LiteLLMModel(BenchmarkModule):
 
         # Extract the generations from the model output
         ordered_responses = [all_responses[i] for i in range(len(model_inputs))]
+
+        # Capture provider/version metadata from the first response (once)
+        if self.response_metadata["api_provider"] is None and ordered_responses:
+            self._extract_response_metadata(ordered_responses[0])
+
         model_output = self._create_model_output(
             model_responses=ordered_responses, model_id=self.model_config.model_id
         )
@@ -470,6 +480,49 @@ class LiteLLMModel(BenchmarkModule):
             )
 
         return model_output
+
+    def _extract_response_metadata(self, response: "ModelResponse") -> None:
+        """Extract provider, model version, and quantization from an API response.
+
+        Populates ``self.response_metadata`` with information returned by the
+        inference provider (e.g. OpenRouter response headers or the ``model``
+        field in the response body).
+        """
+        # The ``model`` field in the response body often contains the versioned
+        # model identifier (e.g. "openai/gpt-5-nano-2027-01-15").
+        self.response_metadata["model_version"] = getattr(response, "model", None)
+
+        # OpenRouter (and some other providers) attach extra metadata in HTTP
+        # response headers that litellm stores on ``_response_headers``.
+        headers: dict | None = getattr(response, "_response_headers", None)
+        if headers:
+            # OpenRouter uses these header names (case-insensitive lookup).
+            header_lower = {k.lower(): v for k, v in headers.items()}
+            self.response_metadata["api_provider"] = header_lower.get(
+                "x-served-by", header_lower.get("x-provider-name")
+            )
+            self.response_metadata["model_quantization"] = header_lower.get(
+                "x-model-quantization"
+            )
+
+        # Fallback: try ``_hidden_params`` which litellm populates with the
+        # ``api_base`` used for the request.
+        if self.response_metadata["api_provider"] is None:
+            hidden = getattr(response, "_hidden_params", None)
+            if hidden:
+                api_base = (
+                    hidden.get("api_base")
+                    if isinstance(hidden, dict)
+                    else getattr(hidden, "api_base", None)
+                )
+                if api_base:
+                    self.response_metadata["api_provider"] = api_base
+
+        log_once(
+            f"Response metadata for {self.model_config.model_id!r}: "
+            f"{self.response_metadata}",
+            level=logging.DEBUG,
+        )
 
     def _handle_exception(
         self, error: Exception, **generation_kwargs

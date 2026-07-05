@@ -133,6 +133,14 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
         if result.generative_type is not None
         else None,
     }
+    # Provider and model version metadata
+    if result.api_provider is not None:
+        model_additional_details["api_provider"] = result.api_provider
+    if result.model_version is not None:
+        model_additional_details["model_version"] = result.model_version
+    if result.model_quantization is not None:
+        model_additional_details["model_quantization"] = result.model_quantization
+
     # Preserve EuroEval-specific metadata fields
     if result.commercially_licensed is not None:
         model_additional_details["commercially_licensed"] = result.commercially_licensed
@@ -168,6 +176,7 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
         "xgrammar_version": result.xgrammar_version or None,
         "litellm_version": result.litellm_version or None,
         "raw_results": json.dumps(raw_results, ensure_ascii=False),
+        "evaluated_at": result.evaluated_at or None,
     }
 
     return {
@@ -304,6 +313,12 @@ def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
             eval_lib_additional.get("xgrammar_version")
         ),
         litellm_version=parse_optional_str(eval_lib_additional.get("litellm_version")),
+        evaluated_at=parse_optional_str(eval_lib_additional.get("evaluated_at")),
+        api_provider=parse_optional_str(model_additional.get("api_provider")),
+        model_version=parse_optional_str(model_additional.get("model_version")),
+        model_quantization=parse_optional_str(
+            model_additional.get("model_quantization")
+        ),
         commercially_licensed=commercially_licensed,
         open=open,
         trained_from_scratch=trained_from_scratch,
