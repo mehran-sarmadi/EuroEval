@@ -223,6 +223,17 @@ def generate_single_iteration(
     all_sequences: list[str] = list()
     all_inputs: list[str] = list()
 
+    # If per-sample predictions are being saved, truncate the output file
+    # up front so that per-batch appends start from a clean slate.
+    predictions_path: Path | None = None
+    if benchmark_config.save_predictions and model_id:
+        predictions_path = _predictions_path(
+            model_id=model_id,
+            dataset_name=dataset_config.name,
+            iteration_idx=iteration_idx,
+        )
+        predictions_path.write_text("")
+
     if len(non_cached_dataset) > 0:
         itr: t.Iterable
         match model.batching_preference:
@@ -252,17 +263,6 @@ def generate_single_iteration(
                 #     ),
                 #     total=len(non_cached_dataset) // benchmark_config.batch_size,
                 # )
-
-        # If per-sample predictions are being saved, truncate the output file
-        # up front so that per-batch appends start from a clean slate.
-        predictions_path: Path | None = None
-        if benchmark_config.save_predictions and model_id:
-            predictions_path = _predictions_path(
-                model_id=model_id,
-                dataset_name=dataset_config.name,
-                iteration_idx=iteration_idx,
-            )
-            predictions_path.write_text("")
 
         # Generate the completions for the non-cached examples
         for batch in itr:
