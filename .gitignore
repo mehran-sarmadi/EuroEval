@@ -163,3 +163,4 @@ PLAN.md
 data/
 euroeval_predictions/
 run_dutch_bench.sh
+.claude
