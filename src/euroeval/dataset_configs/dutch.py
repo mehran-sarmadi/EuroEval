@@ -269,7 +269,7 @@ DUTCH_COR_CONFIG = DatasetConfig(
     source={
         "train": str(Path(__file__).resolve().parents[3] / "data" / "dutch-cor" / "train.csv"),
         "val": str(Path(__file__).resolve().parents[3] / "data" / "dutch-cor" / "val.csv"),
-        "test": str(Path(__file__).resolve().parents[3] / "data" / "dutch-cor" / "test.csv"),
+        "test": str(Path(__file__).resolve().parents[3] / "data" / "dutch-cor" / "test_filtered.csv"),
     },
     task=COMMON_SENSE,
     languages=[DUTCH],
