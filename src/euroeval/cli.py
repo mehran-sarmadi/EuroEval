@@ -240,6 +240,13 @@ from .languages import get_all_languages
     help="Override for the vocabulary size of the model. If not specified, the value "
     "will be inferred automatically from the model.",
 )
+@click.option(
+    "--save-predictions/--no-save-predictions",
+    default=False,
+    show_default=True,
+    help="Whether to save per-sample predictions (input, raw output, prediction, "
+    "ground truth) to a JSONL file in the 'euroeval_predictions' directory.",
+)
 def benchmark(
     model: tuple[str],
     dataset: tuple[str | DatasetConfig],
@@ -271,6 +278,7 @@ def benchmark(
     debug: bool,
     max_context_length: int | None,
     vocabulary_size: int | None,
+    save_predictions: bool,
 ) -> None:
     """Benchmark pretrained language models on language tasks."""
     Benchmarker(
@@ -306,6 +314,7 @@ def benchmark(
         download_only=download_only,
         max_context_length=max_context_length,
         vocabulary_size=vocabulary_size,
+        save_predictions=save_predictions,
     ).benchmark(model=list(model))
 
 

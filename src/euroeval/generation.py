@@ -1,6 +1,7 @@
 """Functions related to text generation of models."""
 
 import collections.abc as c
+import json
 import logging
 import sys
 import typing as t
@@ -138,6 +139,8 @@ def generate(
                 cache=cache,
                 dataset_config=dataset_config,
                 benchmark_config=benchmark_config,
+                model_id=model_config.model_id,
+                iteration_idx=idx,
             )
         except InvalidBenchmark as e:
             log(
@@ -177,6 +180,8 @@ def generate_single_iteration(
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
     cache: ModelCache,
+    model_id: str = "",
+    iteration_idx: int = 0,
 ) -> "IterationScores":
     """Evaluate a model on a dataset in a single iteration through generation.
 
@@ -215,6 +220,8 @@ def generate_single_iteration(
     all_predicted_labels: list[object] = list()
     all_bpc_scores: list[float] = list()
     failed_instances: list["FailedInstance"] = list()
+    all_sequences: list[str] = list()
+    all_inputs: list[str] = list()
 
     if len(non_cached_dataset) > 0:
         itr: t.Iterable
@@ -301,6 +308,16 @@ def generate_single_iteration(
 
             failed_instances += model_output.failed_instances
 
+            # Collect raw outputs and inputs for per-sample prediction saving
+            if benchmark_config.save_predictions:
+                all_sequences.extend(model_output.sequences)
+                if "messages" in batch:
+                    all_inputs.extend(
+                        msgs[-1]["content"] for msgs in batch["messages"]
+                    )
+                else:
+                    all_inputs.extend(batch["text"])
+
             # Extended logging if we are running in debug mode
             if benchmark_config.debug:
                 debug_log(
@@ -360,6 +377,17 @@ def generate_single_iteration(
             all_predicted_labels.extend(model_output.predicted_labels or [])
 
         failed_instances += model_output.failed_instances
+
+        # Collect raw outputs and inputs from cached examples
+        if benchmark_config.save_predictions:
+            all_sequences.extend(model_output.sequences)
+            cached_batch = cached_dataset[:]
+            if "messages" in cached_batch:
+                all_inputs.extend(
+                    msgs[-1]["content"] for msgs in cached_batch["messages"]
+                )
+            elif "text" in cached_batch:
+                all_inputs.extend(cached_batch["text"])
 
         # Collect BPC scores from cached outputs
         if benchmark_config.use_bits_per_character and model_output.bpc_scores:
@@ -440,7 +468,80 @@ def generate_single_iteration(
             dataset=dataset,
             benchmark_config=benchmark_config,
         )
+
+        # Save per-sample predictions to JSONL
+        if benchmark_config.save_predictions and all_predicted_labels:
+            _save_per_sample_predictions(
+                model_id=model_id,
+                dataset_name=dataset_config.name,
+                iteration_idx=iteration_idx,
+                all_inputs=all_inputs,
+                all_sequences=all_sequences,
+                all_predicted_labels=all_predicted_labels,
+                ground_truth=ground_truth,
+                failed_instances=failed_instances,
+            )
+
         return {**metrics_scores, "failed_instances": failed_instances}
+
+
+def _save_per_sample_predictions(
+    model_id: str,
+    dataset_name: str,
+    iteration_idx: int,
+    all_inputs: list[str],
+    all_sequences: list[str],
+    all_predicted_labels: list[object],
+    ground_truth: list,
+    failed_instances: list["FailedInstance"],
+) -> None:
+    """Save per-sample predictions to a JSONL file.
+
+    Args:
+        model_id:
+            The model identifier.
+        dataset_name:
+            The name of the dataset.
+        iteration_idx:
+            The iteration index.
+        all_inputs:
+            The input texts for each sample.
+        all_sequences:
+            The raw model outputs for each sample.
+        all_predicted_labels:
+            The predicted labels for each sample.
+        ground_truth:
+            The ground truth labels for each sample.
+        failed_instances:
+            The list of failed instances with sample indices.
+    """
+    failed_indices = {fi["sample_index"] for fi in failed_instances}
+    safe_model_id = model_id.replace("/", "--")
+    predictions_dir = Path.cwd() / "euroeval_predictions" / safe_model_id
+    predictions_dir.mkdir(parents=True, exist_ok=True)
+    predictions_path = predictions_dir / f"{dataset_name}_iter{iteration_idx}.jsonl"
+
+    num_samples = len(all_predicted_labels)
+    with predictions_path.open("w", encoding="utf-8") as f:
+        for i in range(num_samples):
+            record: dict[str, object] = {"sample_index": i}
+            if i < len(all_inputs):
+                record["input"] = all_inputs[i]
+            if i < len(all_sequences):
+                record["raw_output"] = all_sequences[i]
+            record["prediction"] = all_predicted_labels[i]
+            if i < len(ground_truth):
+                record["ground_truth"] = ground_truth[i]
+                record["correct"] = _labels_match(
+                    all_predicted_labels[i], ground_truth[i]
+                )
+            record["failed"] = i in failed_indices
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+    log(
+        f"Saved {num_samples} per-sample predictions to {predictions_path}",
+        level=logging.INFO,
+    )
 
 
 def debug_log(

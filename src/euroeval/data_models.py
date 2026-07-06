@@ -776,6 +776,7 @@ class BenchmarkConfig:
     max_context_length: int | None
     vocabulary_size: int | None
     use_bits_per_character: bool = False
+    save_predictions: bool = False
 
     @property
     def tasks(self) -> c.Sequence[Task]:
@@ -832,6 +833,7 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     max_context_length: int | None
     vocabulary_size: int | None
     use_bits_per_character: bool = False
+    save_predictions: bool = False
 
 
 def _convert_old_raw_results_format(config: dict[str, object]) -> None:

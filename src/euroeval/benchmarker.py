@@ -89,6 +89,7 @@ class Benchmarker:
         download_only: bool = False,
         max_context_length: int | None = None,
         vocabulary_size: int | None = None,
+        save_predictions: bool = False,
     ) -> None:
         """Initialise the benchmarker.
 
@@ -237,6 +238,7 @@ class Benchmarker:
             run_with_cli=run_with_cli,
             max_context_length=max_context_length,
             vocabulary_size=vocabulary_size,
+            save_predictions=save_predictions,
         )
 
         self.benchmark_config = build_benchmark_config(
@@ -368,6 +370,7 @@ class Benchmarker:
         debug: bool | None = None,
         max_context_length: int | None = None,
         vocabulary_size: int | None = None,
+        save_predictions: bool | None = None,
     ) -> c.Sequence[BenchmarkResult]:
         """Benchmarks models on datasets.
 
@@ -680,6 +683,11 @@ class Benchmarker:
                 vocabulary_size
                 if vocabulary_size is not None
                 else self.benchmark_config_default_params.vocabulary_size
+            ),
+            save_predictions=(
+                save_predictions
+                if save_predictions is not None
+                else self.benchmark_config_default_params.save_predictions
             ),
         )
         benchmark_config = build_benchmark_config(

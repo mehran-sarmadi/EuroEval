@@ -161,4 +161,5 @@ PLAN.md
 
 # Generated data files
 data/
+euroeval_predictions/
 run_dutch_bench.sh
