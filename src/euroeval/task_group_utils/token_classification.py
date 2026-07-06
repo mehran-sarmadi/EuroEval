@@ -156,11 +156,12 @@ def compute_metrics(
     else:
         predictions = list(model_outputs)  # ty: ignore[invalid-assignment]
 
-    # Replace None predictions (failed instances) with empty lists so they
-    # score as all-wrong without crashing downstream iteration.
+    # Replace None predictions (failed instances) with "o" tags matching the
+    # label length so seqeval sees matching dimensions and scores them as
+    # all-wrong (no entities predicted → zero recall for real entities).
     for i, pred in enumerate(predictions):
         if pred is None:
-            predictions[i] = []
+            predictions[i] = ["o"] * len(labels[i])
 
     raise_if_model_output_contains_nan_values(model_output=predictions)
 
