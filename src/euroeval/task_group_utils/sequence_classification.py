@@ -86,11 +86,14 @@ def compute_metrics(
         label2id = {lbl: idx for idx, lbl in enumerate(all_observed)}
         prompt_label_to_label_mapping = {lbl: lbl for lbl in all_observed}
 
+    # Use an id that doesn't match any valid label so None predictions
+    # (from failed instances) are always scored as wrong.
+    invalid_label_id = -1
     predictions = [
         (
             label2id[prompt_label_to_label_mapping[pred.lower()]]
             if isinstance(pred, str)
-            else pred
+            else (invalid_label_id if pred is None else pred)
         )
         for pred in predictions
     ]

@@ -492,17 +492,20 @@ def generate_single_iteration(
             )
             return {bpc_metric.name: float("inf"), "failed_instances": failed_instances}
     else:
-        # A sample is only a genuine scoring failure if the fallback label that
-        # was assigned (after no clean label could be parsed) is *also* wrong.
-        # Fallbacks that happen to land on the correct label are not failures, so
-        # we drop them here to keep `num_failed_instances` meaningful.
-        failed_instances = [
-            failed_instance
+        # When the model produces garbage output (e.g. "{"), the fallback label
+        # is deterministic (first candidate by list order), not a genuine model
+        # prediction. We keep all failed instances as failures regardless of
+        # whether the fallback accidentally matches the correct answer, and
+        # force the prediction to be wrong by clearing it.
+        failed_indices = {
+            failed_instance["sample_index"]
             for failed_instance in failed_instances
-            if (idx := failed_instance["sample_index"]) < len(ground_truth)
-            and idx < len(all_predicted_labels)
-            and not _labels_match(all_predicted_labels[idx], ground_truth[idx])
-        ]
+            if failed_instance["sample_index"] < len(all_predicted_labels)
+        }
+        for idx in failed_indices:
+            # Set to a value that cannot match any ground truth label
+            all_predicted_labels[idx] = None
+            all_preds[idx] = None
         metrics_scores = model.compute_metrics(
             model_outputs_and_labels=(all_preds, ground_truth),
             dataset=dataset,
