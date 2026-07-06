@@ -229,6 +229,41 @@ class LiteLLMModel(BenchmarkModule):
         re.compile(r"(gemini/)?gemini-(2\.5|3)-flash.*"): ["no-thinking", "thinking"],
         # xAI models
         re.compile(r"(xai/)?grok-3-mini(-fast)?(-beta)?"): ["low", "medium", "high"],
+        # OpenRouter models with thinking toggle (no-thinking / thinking)
+        re.compile(r"openrouter/deepseek/deepseek-v4-(flash|pro)"): [
+            "no-thinking",
+            "thinking",
+        ],
+        re.compile(r"openrouter/minimax/minimax-m3"): ["no-thinking", "thinking"],
+        re.compile(r"openrouter/tencent/hy3-preview"): ["no-thinking", "thinking"],
+        re.compile(r"openrouter/google/gemini-(2\.5|3|3\.1)-.*"): [
+            "no-thinking",
+            "thinking",
+        ],
+        re.compile(r"openrouter/google/gemma-4-.*"): ["no-thinking", "thinking"],
+        # OpenRouter models with reasoning_effort levels
+        re.compile(r"openrouter/xiaomi/mimo-v2\.5(-pro)?"): [
+            "none",
+            "minimal",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+        ],
+        re.compile(r"openrouter/openai/gpt-oss-120b"): [
+            "low",
+            "medium",
+            "high",
+        ],
+        re.compile(r"openrouter/moonshotai/kimi-k2\.6"): [
+            "none",
+            "minimal",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+        ],
+        re.compile(r"openrouter/z-ai/glm-5\.2"): ["high", "xhigh"],
     }
 
     def __init__(
@@ -281,10 +316,11 @@ class LiteLLMModel(BenchmarkModule):
         )
 
         self.generation_kwargs = generation_kwargs
-        self.response_metadata: dict[str, str | None] = {
+        self.response_metadata: dict[str, str | int | None] = {
             "api_provider": None,
             "model_version": None,
             "model_quantization": None,
+            "reasoning_tokens": None,
         }
         self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
             dataset_config=self.dataset_config,
@@ -517,6 +553,15 @@ class LiteLLMModel(BenchmarkModule):
                 )
                 if api_base:
                     self.response_metadata["api_provider"] = api_base
+
+        # Extract reasoning token count from usage details
+        usage = getattr(response, "usage", None)
+        if usage is not None:
+            completion_details = getattr(usage, "completion_tokens_details", None)
+            if completion_details is not None:
+                rt = getattr(completion_details, "reasoning_tokens", None)
+                if rt is not None:
+                    self.response_metadata["reasoning_tokens"] = int(rt)
 
         log_once(
             f"Response metadata for {self.model_config.model_id!r}: "
@@ -1816,16 +1861,27 @@ class LiteLLMModel(BenchmarkModule):
         if self.buffer["first_label_token_mapping"]:
             generation_kwargs["logprobs"] = True
             generation_kwargs["top_logprobs"] = MAX_LITELLM_LOGPROBS
+        _is_openrouter = self.model_config.model_id.startswith("openrouter/")
         if self.model_config.param == "thinking":
-            generation_kwargs["thinking"] = dict(
-                type="enabled", budget_tokens=REASONING_MAX_TOKENS - 1
-            )
+            if _is_openrouter:
+                generation_kwargs.setdefault("extra_body", {})["reasoning"] = {
+                    "effort": "high",
+                }
+            else:
+                generation_kwargs["thinking"] = dict(
+                    type="enabled", budget_tokens=REASONING_MAX_TOKENS - 1
+                )
             log_once(
                 f"Enabling thinking mode for model {self.model_config.model_id!r}",
                 level=logging.DEBUG,
             )
         elif self.model_config.param == "no-thinking":
-            generation_kwargs["thinking"] = dict(budget_tokens=0)
+            if _is_openrouter:
+                generation_kwargs.setdefault("extra_body", {})["reasoning"] = {
+                    "effort": "none",
+                }
+            else:
+                generation_kwargs["thinking"] = dict(budget_tokens=0)
             log_once(
                 f"Disabling thinking mode for model {self.model_config.model_id!r}",
                 level=logging.DEBUG,
@@ -1838,7 +1894,12 @@ class LiteLLMModel(BenchmarkModule):
             "high",
             "xhigh",
         }:
-            generation_kwargs["reasoning_effort"] = self.model_config.param
+            if _is_openrouter:
+                generation_kwargs.setdefault("extra_body", {})["reasoning"] = {
+                    "effort": self.model_config.param,
+                }
+            else:
+                generation_kwargs["reasoning_effort"] = self.model_config.param
             log_once(
                 f"Enabling reasoning effort {self.model_config.param!r} for model "
                 f"{self.model_config.model_id!r}",
