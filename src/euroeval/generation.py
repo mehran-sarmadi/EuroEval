@@ -253,6 +253,17 @@ def generate_single_iteration(
                 #     total=len(non_cached_dataset) // benchmark_config.batch_size,
                 # )
 
+        # If per-sample predictions are being saved, truncate the output file
+        # up front so that per-batch appends start from a clean slate.
+        predictions_path: Path | None = None
+        if benchmark_config.save_predictions and model_id:
+            predictions_path = _predictions_path(
+                model_id=model_id,
+                dataset_name=dataset_config.name,
+                iteration_idx=iteration_idx,
+            )
+            predictions_path.write_text("")
+
         # Generate the completions for the non-cached examples
         for batch in itr:
             assert isinstance(batch, dict), (
@@ -311,12 +322,29 @@ def generate_single_iteration(
             # Collect raw outputs and inputs for per-sample prediction saving
             if benchmark_config.save_predictions:
                 all_sequences.extend(model_output.sequences)
+                batch_inputs: list[str] = list()
                 if "messages" in batch:
-                    all_inputs.extend(
+                    batch_inputs = [
                         msgs[-1]["content"] for msgs in batch["messages"]
-                    )
+                    ]
                 else:
-                    all_inputs.extend(batch["text"])
+                    batch_inputs = list(batch["text"])
+                all_inputs.extend(batch_inputs)
+                # Stream partial records to disk so they survive a crash.
+                if (
+                    predictions_path is not None
+                    and model_output.predicted_labels
+                ):
+                    _append_batch_predictions(
+                        predictions_path=predictions_path,
+                        inputs=batch_inputs,
+                        sequences=list(model_output.sequences),
+                        predicted_labels=list(
+                            model_output.predicted_labels
+                        ),
+                        start_idx=len(all_predicted_labels)
+                        - len(model_output.predicted_labels),
+                    )
 
             # Extended logging if we are running in debug mode
             if benchmark_config.debug:
@@ -382,12 +410,24 @@ def generate_single_iteration(
         if benchmark_config.save_predictions:
             all_sequences.extend(model_output.sequences)
             cached_batch = cached_dataset[:]
+            cached_inputs: list[str] = list()
             if "messages" in cached_batch:
-                all_inputs.extend(
+                cached_inputs = [
                     msgs[-1]["content"] for msgs in cached_batch["messages"]
-                )
+                ]
             elif "text" in cached_batch:
-                all_inputs.extend(cached_batch["text"])
+                cached_inputs = list(cached_batch["text"])
+            all_inputs.extend(cached_inputs)
+            # Stream cached partial records to disk.
+            if predictions_path is not None and model_output.predicted_labels:
+                _append_batch_predictions(
+                    predictions_path=predictions_path,
+                    inputs=cached_inputs,
+                    sequences=list(model_output.sequences),
+                    predicted_labels=list(model_output.predicted_labels),
+                    start_idx=len(all_predicted_labels)
+                    - len(model_output.predicted_labels),
+                )
 
         # Collect BPC scores from cached outputs
         if benchmark_config.use_bits_per_character and model_output.bpc_scores:
@@ -485,6 +525,42 @@ def generate_single_iteration(
         return {**metrics_scores, "failed_instances": failed_instances}
 
 
+def _predictions_path(
+    model_id: str, dataset_name: str, iteration_idx: int
+) -> Path:
+    """Return the path to the per-sample predictions JSONL file."""
+    safe_model_id = model_id.replace("/", "--")
+    predictions_dir = Path.cwd() / "euroeval_predictions" / safe_model_id
+    predictions_dir.mkdir(parents=True, exist_ok=True)
+    return predictions_dir / f"{dataset_name}_iter{iteration_idx}.jsonl"
+
+
+def _append_batch_predictions(
+    predictions_path: Path,
+    inputs: list[str],
+    sequences: list[str],
+    predicted_labels: list[object],
+    start_idx: int,
+) -> None:
+    """Append a batch of partial prediction records to a JSONL file.
+
+    Writes ``sample_index``, ``input``, ``raw_output`` and ``prediction``
+    fields. ``ground_truth``, ``correct`` and ``failed`` are filled in later
+    by :func:`_save_per_sample_predictions` once the ground truth labels are
+    available. Streaming per-batch means partial results survive a crash or
+    interruption.
+    """
+    with predictions_path.open("a", encoding="utf-8") as f:
+        for i, pred in enumerate(predicted_labels):
+            record: dict[str, object] = {"sample_index": start_idx + i}
+            if i < len(inputs):
+                record["input"] = inputs[i]
+            if i < len(sequences):
+                record["raw_output"] = sequences[i]
+            record["prediction"] = pred
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+
 def _save_per_sample_predictions(
     model_id: str,
     dataset_name: str,
@@ -516,10 +592,11 @@ def _save_per_sample_predictions(
             The list of failed instances with sample indices.
     """
     failed_indices = {fi["sample_index"] for fi in failed_instances}
-    safe_model_id = model_id.replace("/", "--")
-    predictions_dir = Path.cwd() / "euroeval_predictions" / safe_model_id
-    predictions_dir.mkdir(parents=True, exist_ok=True)
-    predictions_path = predictions_dir / f"{dataset_name}_iter{iteration_idx}.jsonl"
+    predictions_path = _predictions_path(
+        model_id=model_id,
+        dataset_name=dataset_name,
+        iteration_idx=iteration_idx,
+    )
 
     num_samples = len(all_predicted_labels)
     with predictions_path.open("w", encoding="utf-8") as f:
