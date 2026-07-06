@@ -1162,6 +1162,13 @@ class Benchmarker:
                         if model_config.inference_backend == InferenceBackend.LITELLM
                         else None
                     ),
+                    reasoning_tokens=(
+                        getattr(model, "response_metadata", {}).get(
+                            "reasoning_tokens"
+                        )
+                        if model_config.inference_backend == InferenceBackend.LITELLM
+                        else None
+                    ),
                 )
                 log(f"Results:\n{results}", level=logging.DEBUG)
                 return record

@@ -140,6 +140,8 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
         model_additional_details["model_version"] = result.model_version
     if result.model_quantization is not None:
         model_additional_details["model_quantization"] = result.model_quantization
+    if result.reasoning_tokens is not None:
+        model_additional_details["reasoning_tokens"] = str(result.reasoning_tokens)
 
     # Preserve EuroEval-specific metadata fields
     if result.commercially_licensed is not None:
@@ -319,6 +321,9 @@ def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
         model_quantization=parse_optional_str(
             model_additional.get("model_quantization")
         ),
+        reasoning_tokens=int(model_additional["reasoning_tokens"])
+        if model_additional.get("reasoning_tokens") is not None
+        else None,
         commercially_licensed=commercially_licensed,
         open=open,
         trained_from_scratch=trained_from_scratch,

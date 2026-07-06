@@ -903,6 +903,7 @@ class BenchmarkResult(pydantic.BaseModel):
     api_provider: str | None = None
     model_version: str | None = None
     model_quantization: str | None = None
+    reasoning_tokens: int | None = None
     # EuroEval-specific metadata fields (preserved through EEE conversion)
     commercially_licensed: bool | None = None
     open: bool | None = None
