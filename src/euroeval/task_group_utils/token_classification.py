@@ -125,7 +125,10 @@ def compute_metrics(
 
     predictions: list[list[str]]
 
-    if not isinstance(model_outputs[0][0], str):
+    # Find the first non-None output to determine the type (logits vs strings)
+    first_valid = next((o for o in model_outputs if o is not None), None)
+
+    if first_valid is not None and not isinstance(first_valid[0], str):
         raw_predictions: list[list[int]] = np.argmax(model_outputs, axis=-1).tolist()
 
         # Remove ignored index (special tokens)
@@ -152,6 +155,12 @@ def compute_metrics(
 
     else:
         predictions = list(model_outputs)  # ty: ignore[invalid-assignment]
+
+    # Replace None predictions (failed instances) with empty lists so they
+    # score as all-wrong without crashing downstream iteration.
+    for i, pred in enumerate(predictions):
+        if pred is None:
+            predictions[i] = []
 
     raise_if_model_output_contains_nan_values(model_output=predictions)
 

@@ -182,11 +182,19 @@ def raise_if_model_output_contains_nan_values(model_output: "Predictions") -> No
         if model_output.dtype == np.float32 and np.isnan(model_output).any():
             raise NaNValueInModelOutput()
     elif len(model_output) > 0:
-        if isinstance(model_output[0], str):
-            if any(x != x for x in model_output):
+        first_valid = next((x for x in model_output if x is not None), None)
+        if first_valid is None:
+            return
+        if isinstance(first_valid, str):
+            if any(x != x for x in model_output if x is not None):
                 raise NaNValueInModelOutput()
-        elif len(model_output[0]) > 0:
-            if any(x != x for sublist in model_output for x in sublist):
+        elif len(first_valid) > 0:
+            if any(
+                x != x
+                for sublist in model_output
+                if sublist is not None
+                for x in sublist
+            ):
                 raise NaNValueInModelOutput()
 
 
