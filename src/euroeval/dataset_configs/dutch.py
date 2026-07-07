@@ -98,7 +98,6 @@ VALEU_NL_CONFIG = DatasetConfig(
     train_split=None,
     val_split=None,
     bootstrap_samples=False,
-    instruction_prompt="{text}",
     allow_invalid_model_outputs=True,
 )
 
