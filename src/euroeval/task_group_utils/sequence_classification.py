@@ -1,6 +1,7 @@
 """Utility functions related to the sequence-classification task group."""
 
 import collections.abc as c
+import json
 import logging
 import re
 import typing as t
@@ -205,6 +206,30 @@ def extract_labels_from_generation(
         if prefix_candidate_labels:
             new_predicted_labels.append(prefix_candidate_labels[0])
             continue
+
+        # Try to extract a label from JSON output (handles truncated JSON like
+        # '{"label": "a"' that some models produce instead of a bare label)
+        candidate_labels_lower = [
+            c.lower() for c in sample_candidate_labels[idx]
+        ]
+        stripped = predicted_label.strip()
+        if stripped.startswith("{"):
+            json_label: str | None = None
+            for attempt in (stripped, stripped + "}"):
+                try:
+                    parsed = json.loads(attempt)
+                except json.JSONDecodeError:
+                    continue
+                if isinstance(parsed, dict):
+                    for val in parsed.values():
+                        if isinstance(val, str) and val.strip().lower() in candidate_labels_lower:
+                            json_label = val.strip().lower()
+                            break
+                if json_label is not None:
+                    break
+            if json_label is not None:
+                new_predicted_labels.append(json_label)
+                continue
 
         # We set the word edit distance weights such that we heavily penalise insertions
         # and substitutions, so that we don't just insert the correct label, but that we

@@ -99,6 +99,7 @@ VALEU_NL_CONFIG = DatasetConfig(
     val_split=None,
     bootstrap_samples=False,
     instruction_prompt="{text}",
+    allow_invalid_model_outputs=True,
 )
 
 MBBQ_NL_CONFIG = DatasetConfig(
